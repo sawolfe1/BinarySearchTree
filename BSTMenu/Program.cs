@@ -13,16 +13,19 @@ namespace BSTMenu
 
     public class Program
     {  
-        public static int[] ArrayOfIntegers { get; set; }
-
         public static void Main(string[] args)
         {
-            ArrayOfIntegers = new[] { 30, 10, 45, 38, 20, 50, 25, 33, 8, 12 };
-            Console.WriteLine("Array = { 30, 10, 45, 38, 20, 50, 25, 33, 8, 12 }");
-            Console.WriteLine("Convert to Binary Search Tree using TREE-INSERT on each element:\n");
-            var bst = new BinarySearchTree(ArrayOfIntegers);
+            var bst = InitializeBst();
 
             RunTheShow(bst);
+        }
+
+        private static BinarySearchTree InitializeBst()
+        {
+            var arrayOfIntegers = new[] { 30, 10, 45, 38, 20, 50, 25, 33, 8, 12 };
+            Console.WriteLine("Array = { 30, 10, 45, 38, 20, 50, 25, 33, 8, 12 }");
+            Console.WriteLine("Convert to Binary Search Tree using TREE-INSERT on each array element:\n");
+            return new BinarySearchTree(arrayOfIntegers);
         }
 
         private static void RunTheShow(BinarySearchTree bst)
@@ -47,8 +50,23 @@ namespace BSTMenu
                         bst.PostOrderTreeWalk(bst.Root);
                         break;
                     case "4":
-                        Console.WriteLine($"\nTree Search for {input[1]}:");
-                        bst.TreeSearch(bst.Root, int.Parse(input[1]));
+                        if (int.TryParse(input[1], out var num))
+                        {
+                            Console.WriteLine($"\nTree Search for {num}:");
+                            bst.TreeSearch(bst.Root, num);
+                        }
+                        break;
+                    case "5":
+                        if (int.TryParse(input[1], out var num2))
+                        {
+                            Console.WriteLine($"\nTree Delete for {num2}:");
+                            var node = bst.TreeSearch(bst.Root, num2);
+                            if (node != null)
+                            {
+                                bst.TreeDelete(node);
+                                Console.WriteLine("...And Deleted!");
+                            }
+                        }
                         break;
                     default:
                         Console.WriteLine("\n---That's not an option---");
@@ -64,8 +82,8 @@ namespace BSTMenu
             Console.WriteLine("1. Perform Inorder Traversal.");
             Console.WriteLine("2. Perform Preorder Traversal.");
             Console.WriteLine("3. Perform Postorder Traversal.");
-            Console.WriteLine("4. Perform TREE-SEARCH.");
-            Console.WriteLine("5. Perform TREE-DELETE.");
+            Console.WriteLine("4. Perform TREE-SEARCH. (2 arguments)");
+            Console.WriteLine("5. Perform TREE-DELETE. (2 arguments)");
             Console.WriteLine("=======================================");
             Console.Write("Enter Menu Item: ");
 
@@ -81,6 +99,15 @@ namespace BSTMenu
             Key = value;
             Left = null;
             Right = null;
+            Parent = null;
+        }
+
+        public Node(int value, Node parent)
+        {
+            Key = value;
+            Left = null;
+            Right = null;
+            Parent = parent;
         }
 
         public int Key { get; set; }
@@ -88,6 +115,8 @@ namespace BSTMenu
         public Node Left { get; set; }
 
         public Node Right { get; set; }
+
+        public Node Parent { get; set; }
     }
 
     public class BinarySearchTree
@@ -101,7 +130,7 @@ namespace BSTMenu
             foreach (var num in arr.Skip(1))
             {
                 Console.WriteLine($"Inserting {num}!");
-                Insert(Root, num);
+                TreeInsert(Root, num, null);
             }
         }
 
@@ -151,52 +180,86 @@ namespace BSTMenu
             }
         }
 
-        public void TreeSearch(Node node, int key)
+        public Node TreeSearch(Node node, int key)
         {
             if (node == null)
             {
                 Console.WriteLine("\nKey Not Found!");
-                return;
+                return null;
             }
 
             if (key == node.Key)
             {
                 Console.WriteLine("\nKey Found!");
-                return;
+                return node;
             }
 
             if (key < node.Key)
             {
                 Console.WriteLine("To the left...");
-                TreeSearch(node.Left, key);
+                return TreeSearch(node.Left, key);
             }
-            else if (key > node.Key)
 
-            {
-                Console.WriteLine("To the right...");
-                TreeSearch(node.Right, key);
-            }
+            Console.WriteLine("To the right...");
+            return TreeSearch(node.Right, key);
+
         }
 
-        public Node Insert(Node root, int value)
+        public Node TreeInsert(Node root, int value, Node parent)
         {
             if (root == null)
             {
-                root = new Node(value);
+                root = new Node(value, parent);
                 Console.WriteLine($"New Node with key:{value} inserted!");
             }
             else if (value < root.Key)
             {
                 Console.WriteLine("To the left...");
-                root.Left = Insert(root.Left, value);
+                root.Left = TreeInsert(root.Left, value, root);
             }
             else
             {
                 Console.WriteLine("To the right...");
-                root.Right = Insert(root.Right, value);
+                root.Right = TreeInsert(root.Right, value, root);
             }
 
             return root;
+        }
+
+        public void TreeDelete(Node z)
+        {
+            if (z.Left == null)
+                Transplant(z, z.Right);
+            else if (z.Right == null)
+                Transplant(z, z.Left);
+            else
+            {
+                Node y;
+                y = TreeMinimum(z.Right);
+                if (y.Parent != z)
+                {
+                    Transplant(y, y.Right);
+                    y.Right = z.Right;
+                    y.Right.Parent = y;
+                }
+                Transplant(z, y);
+                y.Left = z.Left;
+                y.Left.Parent = y;
+            }
+        }
+
+        public void Transplant(Node u, Node v)
+        {
+            if (u.Parent == null)
+                Root = v;
+            else if (u == u.Parent.Left)
+                u.Parent.Left = v;
+            else
+                u.Parent.Right = v;
+
+            if (v != null)
+                v.Parent = u.Parent;
+
         }
 
     }
